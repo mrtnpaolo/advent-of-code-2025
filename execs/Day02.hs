@@ -1,47 +1,46 @@
 module Main (main) where
 
-import Advent
-import Numeric
-import Data.Ix
-import Data.Ord
-import Data.Char
-import Data.Maybe
-import Data.Either
-import Data.List          qualified as L
-import Data.List.Split    qualified as L
-import Data.Set           qualified as S
-import Data.Map.Strict    qualified as M
-import Data.IntSet        qualified as IS
-import Data.IntMap.Strict qualified as IM
-import Data.Array.Unboxed qualified as A
-import Debug.Trace
+import Advent          (getInput) 
+import Data.Set        (fromList)
+import Data.List.Split (splitOn)
 
 main =
   do inp <- getInput parse 2
      print (part1 inp)
      print (part2 inp)
   where
-    parse = map (map (read @Int) . L.splitOn "-") . lines . map \case c | c `elem` "," -> '\n'; c -> c
+    parse = map (map (read @Int) . splitOn "-") . splitOn ","
 
-part1 = sum . concatMap check
+ids twice ranges = fromList
+  [ p * b                                             -- pattern * base 
 
-check [a,b] = [ n | n <- [a..b], invalid n ]
+  | let n = length . show . maximum . concat $ ranges -- max digits
 
-invalid n
-  | odd l = False
-  | otherwise = q == r
-  where
-    l = length (show n)
-    (q,r) = n `divMod` (10^(l `div` 2))
+  , [lo, hi] <- ranges                                -- for each range
 
-part2 = sum . concatMap check2
+  , k <- [1..n `div` 2]                               -- base sequence length
 
-check2 [a,b] = [ n | n <- [a..b], invalid2 n ]
+  , r <- if twice then [2] else [2..n `div` k]        -- repetition count
 
-invalid2 (show -> xs) =
-  or [ same xss | n <- ns, let xss = L.splitPlaces (repeat n) xs ]
-  where
-    l = length xs
-    ns = [1..l`div`2]
+  -- for the pattern we place a 1 every k digits r times in total
+  --
+  --      k=1    k=2        k=3            k=4
+  -- r=2  11     101        1001           10001
+  -- r=3  111    10101      1001001        100010001
+  -- r=4  1111   1010101    1001001001     1000100010001
+  -- r=5  11111  101010101  1001001001001  ...
+  --
+  -- that is 10^0 + 10^k + 10^(2k) + 10^(3k) + ... + 10^((r-1)k)
+  --
+  -- by the geometric series (10^(rk) - 1)/(10^k - 1)
 
-same (x:xs) = all (x==) xs
+  , let p = (10^(r*k) - 1) `div` (10^k - 1)           -- repeating pattern
+
+  , let bm = max (10^(k-1)) ((lo + p - 1) `div` p)
+  , let bM = min (10^k - 1) (hi `div` p)
+  , b <- [bm..bM]                                     -- base sequences
+  ]
+
+part1 = sum . ids True
+
+part2 = sum . ids False
