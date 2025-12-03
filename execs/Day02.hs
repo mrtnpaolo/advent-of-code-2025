@@ -36,8 +36,12 @@ ids twice ranges = fromList
 
   , let p = (10^(r*k) - 1) `div` (10^k - 1)           -- repeating pattern
 
-  , let bm = max (10^(k-1)) ((lo + p - 1) `div` p)
-  , let bM = min (10^k - 1) (hi `div` p)
+  -- the relevant base sequences are  b ∈ [10^(k-1),10^k - 1]  such that
+  -- lo <= p * b <= hi  which means  lo/p <= b <= hi/p
+
+  , let bm = max (10^(k-1)) ((lo + p - 1) `div` p)    -- integral ceil (a+b-1)/b
+  , let bM = min (10^k - 1) (hi           `div` p)    -- already floors
+
   , b <- [bm..bM]                                     -- base sequences
   ]
 
