@@ -1,20 +1,9 @@
 module Main (main) where
 
-import Advent
-import Numeric
-import Data.Ix
-import Data.Ord
-import Data.Char
-import Data.Maybe
-import Data.Either
-import Data.List          qualified as L
-import Data.List.Split    qualified as L
-import Data.Set           qualified as S
-import Data.Map.Strict    qualified as M
-import Data.IntSet        qualified as IS
-import Data.IntMap.Strict qualified as IM
-import Data.Array.Unboxed qualified as A
-import Debug.Trace
+import Advent             (getInputArray, neighbors)
+import Data.List          (unfoldr)
+import Data.Array.Unboxed (assocs, (!), inRange, bounds, (//))
+import Control.Monad      (guard)
 
 main =
   do inp <- getInputArray 4
@@ -24,15 +13,10 @@ main =
 part1 = length . accessible
 
 accessible a =
-  [ c
-  | (c,'@') <- A.assocs a
-  , length [ n | n <- neighbors c, '@' <- maybeToList (a A.!? n) ] < 4 ]
+  [ c | (c,'@') <- assocs a
+      , length [ n | n <- neighbors c, inRange (bounds a) n, a!n == '@' ] < 4 ]
 
-part2 = sum . L.unfoldr remove
-
-remove a
-  | null cs   = Nothing
-  | otherwise = Just (length cs,a')
-  where
-    cs = accessible a
-    a' = a A.// [ (c,'.') | c <- cs ]
+part2 = sum . unfoldr \a ->
+  do let cs = accessible a
+     guard (not (null cs))
+     pure (length cs, a // [ (c,'.') | c <- cs ])
