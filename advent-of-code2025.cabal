@@ -39,6 +39,7 @@ library
     import:             extensions
     exposed-modules:    Advent
                       , Advent.Coord
+                      , Advent.Coord.Set
                       , Advent.Input
                       , Advent.Search
                       , Advent.Chinese
