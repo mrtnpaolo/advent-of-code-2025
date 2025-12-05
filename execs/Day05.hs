@@ -1,55 +1,29 @@
 module Main (main) where
 
-import Advent
-import Numeric
-import Data.Ix
-import Data.Ord
-import Data.Char
-import Data.Maybe
-import Data.Either
-import Data.List          qualified as L
-import Data.List.Split    qualified as L
-import Data.Set           qualified as S
-import Data.Map.Strict    qualified as M
-import Data.IntSet        qualified as IS
-import Data.IntMap.Strict qualified as IM
-import Data.Array.Unboxed qualified as A
-import Debug.Trace
-import Control.Monad
+import Advent          (getInput, count)
+import Data.Ix         (inRange)
+import Data.List       (foldl', sort, findIndex)
+import Data.List.Split (splitOn)
 
 main =
-  do inp <- getInput parse 5
-     print (part1 inp)
-     print (part2 inp)
+  do (foldl' combine [] . sort -> rs,xs) <- getInput (parse . splitOn "\n\n") 5
+     print (part1 rs xs)
+     print (part2 rs)
   where
-    parse (L.splitOn "\n\n" -> [rs,xs]) = (rs',xs')
-      where
-        xs' = map (read @Int) . lines $ xs
-        rs' = map (map (read @Int) . L.splitOn "-") . lines $ rs
+    parse [map range . lines -> rs, map int . lines -> xs] = (rs,xs)
+    range = (\[a,b] -> (int a,int b)) . splitOn "-"
+    int   = read @Int
 
-part1 (rs,xs) = count (fresh rs) xs
+part1 rs = count (\x -> any (`inRange` x) rs)
 
-fresh rs x = any f rs
-  where
-    f [lo,hi] = lo <= x && x <= hi
+part2 rs = sum [ h-l+1 | (l,h) <- rs ]
 
--- part2 (rs,_) = rs -- length $ concat $ [ [lo..hi] | [lo,hi] <- rs ]
+combine rs (l,h) =
+  case ( rs ? l , rs ? h ) of
+    ( Just i  , Just j  ) | (xs,(a,_): _) <- splitAt i rs
+                          , ( _,(_,b):ys) <- splitAt j rs -> (xs ++ (a,b) : ys)
+    ( Just i  , Nothing ) | (xs,(a,_):ys) <- splitAt i rs -> (xs ++ (a,h) : ys)
+    ( Nothing , Just j  ) | (xs,(_,b):ys) <- splitAt j rs -> (xs ++ (l,b) : ys)
+    ( Nothing , Nothing )                                 -> (      (l,h) : rs)
 
-part2 (rs,_) = total $ L.foldl' combine [] (L.sort rs)
-
-total rs = sum [ h-l+1 | [l,h] <- rs ]
-
-combine rs x@[l,h]
-  | Just i  <- f rs l, Just j  <- f rs h
-  , (xs,[a,_]: _) <- splitAt i rs
-  , ( _,[_,d]:ys) <- splitAt j rs        = L.sort (xs ++ [a,d] : ys)
-
-  | Just i  <- f rs l, Nothing <- f rs h
-  , (xs,[a,b]:ys) <- splitAt i rs        = L.sort (xs ++ [a,h] : ys)
-
-  | Nothing <- f rs l, Just j  <- f rs h
-  , (xs,[a,b]:ys) <- splitAt j rs        = L.sort (xs ++ [l,b] : ys)
-
-  | Nothing <- f rs l, Nothing <- f rs h = L.sort (x : rs)
-
-f rs x = L.findIndex (\[a,b] -> a <= x && x <= b) rs
+rs ? x = findIndex (`inRange` x) rs
