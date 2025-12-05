@@ -11,6 +11,10 @@ main =
   where
     parse = map (map (read @Int) . splitOn "-") . splitOn ","
 
+part1 = sum . ids True
+
+part2 = sum . ids False
+
 ids twice ranges = fromList
   [ p * b                                             -- pattern * base 
 
@@ -42,9 +46,4 @@ ids twice ranges = fromList
   , let bm = max (10^(k-1)) ((lo + p - 1) `div` p)    -- integral ceil (a+b-1)/b
   , let bM = min (10^k - 1) (hi           `div` p)    -- already floors
 
-  , b <- [bm..bM]                                     -- base sequences
-  ]
-
-part1 = sum . ids True
-
-part2 = sum . ids False
+  , b <- [bm..bM] ]                                   -- base sequences
