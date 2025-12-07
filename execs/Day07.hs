@@ -1,51 +1,34 @@
 module Main (main) where
 
-import Advent
-import Numeric
-import Data.Ix
-import Data.Ord
-import Data.Char
-import Data.Maybe
-import Data.Either
-import Data.List          qualified as L
-import Data.List.Split    qualified as L
-import Data.Set           qualified as S
-import Data.Map.Strict    qualified as M
-import Data.IntSet        qualified as IS
-import Data.IntMap.Strict qualified as IM
+import Advent.Input  (getInputArray)
+import Advent.List   (count)
+import Advent.Memo   (memo)
+import Advent.Coord  (Coord(..),coordRow,left,below,right)
+import Advent.Search (bfs)
+
 import Data.Array.Unboxed qualified as A
-import Debug.Trace
 
 main =
   do inp <- getInputArray 7
      print (part1 inp)
      print (part2 inp)
 
-part1 a = count ('^'==) [ a A.! c | c <- visited ]
+part1 a = count ('^'==) [ a A.! c | c <- bfs nexts (start a) ]
   where
-    (_,C yM _) = A.bounds a
+    nexts c | end a c   = []
+            | otherwise = case a A.! c of
+                '.' -> [below c]
+                '^' -> [left c,right c]
 
-    [s] = [ c | (c,'S') <- A.assocs a ]
-
-    visited = bfs nexts s
-
-    nexts c@(C y _)
-      | y == yM   = []
-      | otherwise = case a A.! c of
-      'S' -> [below c]
-      '.' -> [below c]
-      '^' -> [left c,right c]
-
-part2 a = arrivals s
+part2 a = arrivals (start a)
   where
-    (_,C yM _) = A.bounds a
+    arrivals = memo $
+      \case c | end a c   -> 1
+              | otherwise ->
+              case a A.! c of
+                '.' -> arrivals (below c)
+                '^' -> arrivals (left  c) + arrivals (right c)
 
-    [s] = [ c | (c,'S') <- A.assocs a ]
+start a = below c where [c] = [ c | (c,'S') <- A.assocs a ]
 
-    arrivals = memo $ \c@(C y _) ->
-      if y == yM
-        then 1
-        else case a A.! c of
-               'S' -> arrivals (below c)
-               '^' -> arrivals (left c) + arrivals (right c)
-               '.' -> arrivals (below c)
+end a (C y _) = y == yM where (_,C yM _) = A.bounds a
