@@ -18,6 +18,7 @@ import GHC.Arr
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Foldable (toList)
+import Data.MemoTrie (HasTrie(..))
 
 -- | Row-major coordinates
 data Coord = C !Int !Int
@@ -101,6 +102,12 @@ instance Num Coord where
   {-# INLINE signum #-}
   fromInteger = (\i -> C i i) . fromInteger
   {-# INLINE fromInteger #-}
+
+instance HasTrie Coord where
+  newtype Coord :->: a = CT (Int :->: Int :->: a)
+  trie f = CT (trie \y -> trie \x -> f (C y x))
+  CT t `untrie` C y x = t `untrie` y `untrie` x
+  enumerate (CT t) = [(C y x, a) | (y, xs) <- enumerate t, (x, a) <- enumerate xs]
 
 instance Ix Coord where
   unsafeIndex (C ym xm,C _yM xM) (C y x) =
