@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Advent          (getInput) 
+import Advent          (getInput)
 import Data.Set        (fromList)
 import Data.List.Split (splitOn)
 
@@ -16,7 +16,7 @@ part1 = sum . ids True
 part2 = sum . ids False
 
 ids twice ranges = fromList
-  [ p * b                                             -- pattern * base 
+  [ p * b                                             -- pattern * base
 
   | let n = length . show . maximum . concat $ ranges -- max digits
 
