@@ -5,8 +5,7 @@ module Advent.Deque
   ) where
 
 import Data.Bits (shiftR,(.&.))
-
-import Debug.Trace
+import Data.List (foldl')
 
 -- | Okasaki purely functional double ended queue
 data Deque a = D [a] !Int [a] !Int
@@ -70,5 +69,5 @@ singleton x = D [x] 1 [] 0
 fromList :: [a] -> Deque a
 fromList xs = mkDeque (D xs (length xs) [] 0)
 
-appendList :: [a] -> Deque a -> Deque a
-appendList xs d = foldl (|>) d xs
+appendList :: Deque a -> [a] -> Deque a
+appendList d xs = foldl' (|>) d xs

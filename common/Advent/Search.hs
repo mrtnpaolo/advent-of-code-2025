@@ -53,7 +53,7 @@ bfsOn repr next starts = loop S.empty (D.fromList starts)
     loop _ D.Empty = []
     loop seen (x D.:<| xs)
       | r `S.member` seen = loop seen xs
-      | otherwise         = x : loop seen' (D.appendList nexts xs)
+      | otherwise         = x : loop seen' (D.appendList xs nexts)
       where
         r = repr x
         seen' = S.insert r seen
@@ -67,7 +67,7 @@ bfsOnInt repr next starts = loop IS.empty (D.fromList starts)
     loop _ D.Empty = []
     loop seen (x D.:<| xs)
       | r `IS.member` seen = loop seen xs
-      | otherwise          = x : loop seen' (D.appendList nexts xs)
+      | otherwise          = x : loop seen' (D.appendList xs nexts)
       where
         r = repr x
         seen' = IS.insert r seen
