@@ -1,74 +1,49 @@
 module Main (main) where
 
-import Advent
-import Numeric
-import Data.Ix
-import Data.Ord
-import Data.Bits
-import Data.Char
-import Data.Maybe
-import Data.Either
+import Advent (getInputLines,pairs)
+import Data.Ord (Down(..))
 import Data.List          qualified as L
-import Data.List.Split    qualified as L
-import Data.Set           qualified as S
-import Data.Map.Strict    qualified as M
-import Data.IntSet        qualified as IS
 import Data.IntMap.Strict qualified as IM
-import Data.Array.Unboxed qualified as A
-import Debug.Trace
 
 main =
-  do inp <- getInputLines parse 8
-     -- print (part1 inp)
-     print (part2 inp)
+  do circuits <- connect <$> getInputLines (parse . map \case ','->' ';c->c) 8
+     print (part1 circuits)
+     print (part2 circuits)
   where
     parse = (\[x,y,z]->(x,y,z)) . map (read @Int) . words
-          . map \case ','->' ';c->c
 
-part2 ps = solve $ go 0 IM.empty ds
+part1 ((!! (1000 - 1)) -> (_,cs))
+  = product . take 3 . L.sortOn Down . IM.elems
+  . IM.fromListWith (+) $ [ (c,1) | c <- IM.elems cs ]
+
+part2 (last -> (((xp,_,_),(xq,_,_)),_)) = xp * xq
+
+connect points = go 0 IM.empty ds
   where
-    m = IM.fromList [ (h p,p) | p <- ps ]
+    hash (x,y,z) = 100*x + 10*y + z
+    m = IM.fromList [ (hash p,p) | p <- points ]
     l = (m IM.!)
+
+    dist (x1,y1,z1) (x2,y2,z2) = dx*dx + dy*dy + dz*dz
+      where
+        (dx,dy,dz) = (x1-x2,y1-y2,z1-z2)
+
     ds = IM.fromListWith (++)
-           [ (d (l p) (l q),[(p,q)]) | (p,q) <- pairs (IM.keys m) ]
-    ds' = IM.fromAscListWith (++) $ take 1000 $
-           [ (d,[pq]) | (d,pqs) <- IM.toAscList ds, pq <- pqs ]
+           [ (dist p' q',[(p,q)]) | ((p,p'),(q,q')) <- pairs (IM.assocs m) ]
 
     go n cs dm
-
-{-
-      | IM.null dm = product . take 3 . reverse . L.sort
-                   . map length . L.group . L.sort . IM.elems $ cs
--}
-
-      | IM.size cs == IM.size m && (\(x:xs) -> all (x==) xs) (IM.elems cs)
-      = []
-
+      | IM.size cs == IM.size m && (\(x:xs) -> all (x==) xs) (IM.elems cs) = []
       | ((d,(p,q):rs),dm') <- IM.deleteFindMin dm
-      , dm'' <- if null rs then dm' else IM.insert d rs dm' =
-        (p,q) : case (cs IM.!? p,cs IM.!? q) of
+      , dm'' <- if null rs then dm' else IM.insert d rs dm'
+      = let
+          (n',cs') = case (cs IM.!? p,cs IM.!? q) of
+            (Nothing,Nothing) -> (n+1,IM.insert p n $ IM.insert q n $ cs)
+            (Just c1,Nothing) -> (n  ,IM.insert q c1 cs)
+            (Nothing,Just c2) -> (n  ,IM.insert p c2 cs)
+            (Just c1,Just c2)
+              | c1 == c2      -> (n,cs)
+              | True          -> (n,IM.map (\c -> if c==c2 then c1 else c) cs)
+        in
+          ((l p,l q),cs') : go n' cs' dm''
 
-          (Nothing,Nothing) -> go (n+1) cs' dm''
-            where
-              cs' = IM.insert p n $ IM.insert q n $ cs
 
-          (Just a ,Nothing) -> go n cs' dm'' where cs' = IM.insert q a cs
-
-          (Nothing,Just b ) -> go n cs' dm'' where cs' = IM.insert p b cs
-
-          (Just a ,Just b )
-            | a == b    -> go n cs dm''
-            | otherwise -> go n cs' dm''
-            where
-              k = min a b
-              k' = max a b
-              cs' = (IM.map (const k') $ IM.filter (k==) cs) `IM.union` cs
-
-    solve (last -> (l -> (xp,_,_),l -> (xq,_,_))) = xp * xq
-
-h (x,y,z) = 100*x + 10*y + z
-
-d :: (Int,Int,Int) -> (Int,Int,Int) -> Int
-d (x1,y1,z1) (x2,y2,z2) = floor (sqrt (d x1 x2 + d y1 y2 + d z1 z2))
-  where
-    d a b = fromIntegral $ (a - b)*(a - b)
