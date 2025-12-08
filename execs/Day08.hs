@@ -18,7 +18,7 @@ part1 ((!! (1000 - 1)) -> (_,cs))
 
 part2 (last -> (((xp,_,_),(xq,_,_)),_)) = xp * xq
 
-connect points = go 0 IM.empty ps
+connect points = go (IM.size m) IM.empty ps
   where
     hash (x,y,z) = 100*x + 10*y + z
     m = IM.fromList [ (hash p,p) | p <- points ]
@@ -30,16 +30,15 @@ connect points = go 0 IM.empty ps
 
     ps = [ (hash p,hash q) | (p,q) <- L.sortOn (uncurry dist) (pairs points) ]
 
+    go 1 _ _ = []
     go n cs ((p,q):ps)
-      | IM.size cs == IM.size m && (\(x:xs) -> all (x==) xs) (IM.elems cs) = []
-      | otherwise
-      = let
-          (n',cs') = case (cs IM.!? p,cs IM.!? q) of
-            (Nothing,Nothing) -> (n+1,IM.insert p n $ IM.insert q n $ cs)
-            (Just c1,Nothing) -> (n  ,IM.insert q c1 cs)
-            (Nothing,Just c2) -> (n  ,IM.insert p c2 cs)
-            (Just c1,Just c2)
-              | c1 == c2      -> (n,cs)
-              | True          -> (n,IM.map (\c -> if c==c2 then c1 else c) cs)
-        in
-          ((l p,l q),cs') : go n' cs' ps
+      | p'  <- find cs p
+      , q'  <- find cs q
+      , cs' <- IM.insert p' q' cs
+      = ((l p,l q),cs') : if p' == q' then go n cs ps else go (n-1) cs' ps
+
+    find cs p
+      | p == p'   = p
+      | otherwise = find cs p'
+      where
+        p' = IM.findWithDefault p p cs
