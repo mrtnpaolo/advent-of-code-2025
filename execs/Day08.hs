@@ -18,7 +18,7 @@ part1 ((!! (1000 - 1)) -> (_,cs))
 
 part2 (last -> (((xp,_,_),(xq,_,_)),_)) = xp * xq
 
-connect points = go 0 IM.empty ds
+connect points = go 0 IM.empty ps
   where
     hash (x,y,z) = 100*x + 10*y + z
     m = IM.fromList [ (hash p,p) | p <- points ]
@@ -28,13 +28,11 @@ connect points = go 0 IM.empty ds
       where
         (dx,dy,dz) = (x1-x2,y1-y2,z1-z2)
 
-    ds = IM.fromListWith (++)
-           [ (dist p' q',[(p,q)]) | ((p,p'),(q,q')) <- pairs (IM.assocs m) ]
+    ps = [ (hash p,hash q) | (p,q) <- L.sortOn (uncurry dist) (pairs points) ]
 
-    go n cs dm
+    go n cs ((p,q):ps)
       | IM.size cs == IM.size m && (\(x:xs) -> all (x==) xs) (IM.elems cs) = []
-      | ((d,(p,q):rs),dm') <- IM.deleteFindMin dm
-      , dm'' <- if null rs then dm' else IM.insert d rs dm'
+      | otherwise
       = let
           (n',cs') = case (cs IM.!? p,cs IM.!? q) of
             (Nothing,Nothing) -> (n+1,IM.insert p n $ IM.insert q n $ cs)
@@ -44,6 +42,4 @@ connect points = go 0 IM.empty ds
               | c1 == c2      -> (n,cs)
               | True          -> (n,IM.map (\c -> if c==c2 then c1 else c) cs)
         in
-          ((l p,l q),cs') : go n' cs' dm''
-
-
+          ((l p,l q),cs') : go n' cs' ps
