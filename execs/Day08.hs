@@ -12,18 +12,15 @@ main =
   where
     parse = (\[x,y,z]->(x,y,z)) . map (read @Int) . words
 
-part1 ((!! (1000 - 1)) -> (_,cs))
-  = product . take 3 . L.sortOn Down . IM.elems
-  . IM.fromListWith (+) $ [ (c,1) | c <- IM.elems cs ]
+part1 ((!! (1000 - 1)) -> (_,sizes)) = product . take 3 . L.sortOn Down $ sizes
 
 part2 (last -> (((xp,_,_),(xq,_,_)),_)) = xp * xq
 
-connect points = go (length sorted) cs0 pairs
+connect points = go (length sorted) IM.empty pairs
   where
     sorted = L.sortOn (\(x,_,_) -> x) points
 
     hash (x,y,z) = 100*x + 10*y + z
-    cs0 = IM.fromList [(hash p,hash p) | p <- sorted]
 
     dist (x1,y1,z1) (x2,y2,z2) = dx*dx + dy*dy + dz*dz
       where (dx,dy,dz) = (x1-x2,y1-y2,z1-z2)
@@ -37,9 +34,17 @@ connect points = go (length sorted) cs0 pairs
 
     go 1 _ _ = []
     go n cs ((p,q):rs)
-      | sp == sq  = ((p,q),cs ) : go n     cs  rs
-      | otherwise = ((p,q),cs') : go (n-1) cs' rs
+      | rp == rq  = ((p,q),sizes cs ) : go n     cs  rs
+      | otherwise = ((p,q),sizes cs') : go (n-1) cs' rs
       where
-        sp  = cs IM.! hash p
-        sq  = cs IM.! hash q
-        cs' = IM.map (\v -> if v == sp then sq else v) cs
+        rp  = find cs (hash p)
+        rq  = find cs (hash q)
+        cs' = IM.insert rp rq cs
+
+    sizes cs = IM.elems $
+      IM.fromListWith (+) [ (find cs (hash p),1) | p <- sorted ]
+
+    find cs p
+      | p == rp   = p
+      | otherwise = find cs rp
+      where rp = IM.findWithDefault p p cs
