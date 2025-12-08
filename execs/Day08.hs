@@ -19,13 +19,13 @@ import Debug.Trace
 
 main =
   do inp <- getInputLines parse 8
-     print (part1 inp)
+     -- print (part1 inp)
      print (part2 inp)
   where
     parse = (\[x,y,z]->(x,y,z)) . map (read @Int) . words
           . map \case ','->' ';c->c
 
-part1 ps = go 0 IM.empty ds'
+part2 ps = solve $ go 0 IM.empty ds
   where
     m = IM.fromList [ (h p,p) | p <- ps ]
     l = (m IM.!)
@@ -36,13 +36,17 @@ part1 ps = go 0 IM.empty ds'
 
     go n cs dm
 
+{-
       | IM.null dm = product . take 3 . reverse . L.sort
                    . map length . L.group . L.sort . IM.elems $ cs
+-}
+
+      | IM.size cs == IM.size m && (\(x:xs) -> all (x==) xs) (IM.elems cs)
+      = []
 
       | ((d,(p,q):rs),dm') <- IM.deleteFindMin dm
       , dm'' <- if null rs then dm' else IM.insert d rs dm' =
-
-        case (cs IM.!? p,cs IM.!? q) of
+        (p,q) : case (cs IM.!? p,cs IM.!? q) of
 
           (Nothing,Nothing) -> go (n+1) cs' dm''
             where
@@ -58,10 +62,9 @@ part1 ps = go 0 IM.empty ds'
             where
               k = min a b
               k' = max a b
-              cs' = traceShow (a,b,k,k') (IM.map (const k') $ IM.filter (k==) cs) `IM.union` cs
+              cs' = (IM.map (const k') $ IM.filter (k==) cs) `IM.union` cs
 
-
-part2 = const ()
+    solve (last -> (l -> (xp,_,_),l -> (xq,_,_))) = xp * xq
 
 h (x,y,z) = 100*x + 10*y + z
 
